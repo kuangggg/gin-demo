@@ -39,6 +39,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+	db.LogMode(true)
 	db.DB().SetMaxIdleConns(10)
 	db.DB().SetMaxOpenConns(100)
 
