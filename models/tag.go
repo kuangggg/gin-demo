@@ -1,5 +1,12 @@
 package models
 
+import (
+	"fmt"
+	"github.com/jinzhu/gorm"
+	"log"
+	"time"
+)
+
 type Tag struct {
 	Model
 	Name       string `json:"name"`
@@ -20,11 +27,36 @@ func GetTagTotal(maps interface{}) (count int) {
 
 func ExistTagByName(name string) bool {
 	var tag Tag
-	db.Select("id").Where("name = ?", name).First(&tag)
-	if tag.ID > 0 {
-		return true
+	err := db.Select("id").Where("name = ?", name).First(&tag).Error
+
+	if err == gorm.ErrRecordNotFound {
+		return false
 	}
-	return false
+
+	if err != nil {
+		log.Printf("db find error %v\n", err)
+		return false
+	}
+
+	return true
+}
+
+func ExistTagById(id int) bool {
+	var tag Tag
+	err := db.Select("id").Where("id = ?", id).First(&tag).Error
+	fmt.Println(id)
+	fmt.Println(err)
+
+	if err == gorm.ErrRecordNotFound {
+		return false
+	}
+
+	if err != nil {
+		log.Printf("db find error %v\n", err)
+		return false
+	}
+
+	return true
 }
 
 func AddTag(name string, state int, createdBy string) error {
@@ -33,5 +65,27 @@ func AddTag(name string, state int, createdBy string) error {
 		State:     state,
 		CreatedBy: createdBy,
 	}).Error
-
 }
+
+func (tag *Tag) BeforeCreate(scope *gorm.Scope) error {
+	scope.SetColumn("CreatedOn", time.Now().Unix())
+	return nil
+}
+
+func (tag *Tag) BeforeUpdate(scope *gorm.Scope) error {
+	scope.SetColumn("ModifiedOn", time.Now().Unix())
+	return nil
+}
+
+func DeleteTag(id int) bool {
+	db.Where("id = ?", id).Delete(&Tag{})
+
+	return true
+}
+
+func EditTag(id int, data interface{}) bool {
+	db.Model(&Tag{}).Where("id = ?", id).Updates(data)
+	return true
+}
+
+
